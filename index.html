@@ -1616,7 +1616,7 @@
             const dateInput = document.getElementById('new-date').value;
             const deposit = parseFloat(document.getElementById('new-deposit').value || 0);
             const product = document.getElementById('new-product').value;
-            const total = calculateTotal();
+
 
             if (!name || !dateInput || (currentOrderItems.length === 0 && !product)) {
                 alert('Por favor agrega al menos un producto al pedido.');
@@ -1628,6 +1628,15 @@
                 addItemsToList();
             }
 
+            // Recalculate total after potentially adding item
+            const total = calculateTotal();
+
+            // Validate that we have items
+            if (currentOrderItems.length === 0) {
+                alert('Por favor agrega al menos un producto al pedido.');
+                return;
+            }
+
             const phone = document.getElementById('new-phone').value;
             const email = document.getElementById('new-email').value;
 
@@ -1635,27 +1644,6 @@
             const dateObj = new Date(dateInput);
             const timeStr = dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
             const dateStr = dateObj.toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' });
-
-            // Determine Description
-            let desc = '';
-            if (product === 'bouquet_vino') {
-                const type = document.querySelector('input[name="vinoflor_type"]:checked')?.value;
-                desc = `Bouquet & Vino (${type.charAt(0).toUpperCase() + type.slice(1)})`;
-            } else if (product === 'paquete_mini') {
-                const qty = document.getElementById('new-quantity').value;
-                const options = Array.from(document.querySelectorAll('input[name="mini-option"]:checked')).map(cb => cb.value).join(', ');
-                desc = `Paquete Mini (${qty}) - Incluye: ${options || 'Ninguno'}`;
-            } else {
-                const qty = document.getElementById('new-quantity').value;
-                const unit = product === 'paquete_mini' ? 'Paquetes' : (product === 'brownie' ? 'Cajas' : 'Bolsas');
-                const pName = product.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-
-                let detail = '';
-                if (product === 'palomitas') detail = ` (${document.getElementById('palomitas-sabor').value})`;
-                if (product === 'pretzels') detail = ` (${document.getElementById('pretzels-tipo').value})`;
-
-                desc = `${pName}${detail} - ${qty} ${unit}`;
-            }
 
             const orderData = {
                 id: editMode ? currentOrderId : Date.now().toString(),
