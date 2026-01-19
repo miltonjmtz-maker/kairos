@@ -278,6 +278,10 @@
                 <div id="drawer-items-list" class="space-y-3 mb-3">
                     <!-- Items injected by JS -->
                 </div>
+                <div id="drawer-notes-section" class="hidden mt-4 p-3 bg-white/5 rounded-lg border border-white/5">
+                    <label class="text-[10px] text-muted uppercase tracking-wider block mb-1">Notas</label>
+                    <p id="drawer-notes" class="text-sm text-foreground/90 leading-relaxed"></p>
+                </div>
                 <div id="drawer-urgent" class="mt-3 flex items-center text-warning text-sm font-medium hidden">
                     <i data-lucide="alert-triangle" class="w-4 h-4 mr-2"></i> Pedido Urgente
                 </div>
@@ -376,6 +380,15 @@
                             class="w-full bg-secondary/50 border border-white/10 rounded-lg px-4 py-3 text-foreground focus:outline-none focus:border-primary/50 transition-colors"
                             placeholder="0.00" oninput="calculateTotal()">
                     </div>
+                </div>
+
+                <!-- Notes Field -->
+                <div>
+                    <label class="block text-xs uppercase tracking-wider text-muted mb-1.5">Notas / Descripción
+                        (Opcional)</label>
+                    <textarea id="new-notes" rows="3"
+                        class="w-full bg-secondary/50 border border-white/10 rounded-lg px-4 py-3 text-foreground focus:outline-none focus:border-primary/50 transition-colors resize-none"
+                        placeholder="Ej. Sin nueces, entrega en recepción, incluir tarjeta..."></textarea>
                 </div>
 
                 <!-- Product Selection -->
@@ -801,6 +814,16 @@
                 });
             } else {
                 itemsListEl.innerHTML = `<p class="text-sm text-foreground/90 leading-relaxed">${order.description}</p>`;
+            }
+
+            // Show notes if present
+            const notesSection = document.getElementById('drawer-notes-section');
+            const notesEl = document.getElementById('drawer-notes');
+            if (order.notes && order.notes.trim()) {
+                notesEl.textContent = order.notes;
+                notesSection.classList.remove('hidden');
+            } else {
+                notesSection.classList.add('hidden');
             }
 
             // Contact Info
@@ -1350,6 +1373,7 @@
             document.getElementById('new-product').value = '';
             document.getElementById('new-phone').value = '';
             document.getElementById('new-email').value = '';
+            document.getElementById('new-notes').value = '';
             currentOrderItems = [];
             renderAddedItems();
             updateProductOptions();
@@ -1640,6 +1664,7 @@
 
             const phone = document.getElementById('new-phone').value;
             const email = document.getElementById('new-email').value;
+            const notes = document.getElementById('new-notes').value;
 
             // Format date time for display
             const dateObj = new Date(dateInput);
@@ -1655,6 +1680,7 @@
                 deliveryTime: timeStr,
                 description: currentOrderItems.map(i => `${i.quantity}x ${i.name}`).join(', '),
                 items: currentOrderItems,
+                notes: notes,
                 totalAmount: total,
                 paidAmount: deposit,
                 status: editMode ? orders.find(o => o.id === currentOrderId).status : 'pedidos',
@@ -1690,6 +1716,7 @@
             document.getElementById('new-name').value = order.customerName;
             document.getElementById('new-phone').value = order.customerPhone || '';
             document.getElementById('new-email').value = order.customerEmail || '';
+            document.getElementById('new-notes').value = order.notes || '';
 
             // Convert DD/MM/YYYY to YYYY-MM-DD for datetime-local
             const parts = order.deliveryDate.split('/');
