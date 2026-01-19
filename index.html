@@ -18,6 +18,29 @@
     <!-- SortableJS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
 
+    <!-- Firebase SDK (Modular) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, setDoc, doc, onSnapshot, query, orderBy, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyClWnvK_fWPjQMomhk96cbY6lu2VhsgS7U",
+            authDomain: "kairos-crm-f2dca.firebaseapp.com",
+            projectId: "kairos-crm-f2dca",
+            storageBucket: "kairos-crm-f2dca.firebasestorage.app",
+            messagingSenderId: "169315584627",
+            appId: "1:169315584627:web:e7d2108666e27b3b67b806"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Globals for simple script access
+        window.db = db;
+        window.fs = { collection, addDoc, setDoc, doc, onSnapshot, query, orderBy, deleteDoc };
+    </script>
+
     <!-- PWA Manifest -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#D4AF37">
@@ -129,7 +152,7 @@
     </header>
 
     <!-- Kanban Board -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 h-[calc(100vh-250px)]">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 md:h-[calc(100vh-250px)] h-auto mb-10">
 
         <!-- Column Pedidos -->
         <div class="flex flex-col h-full">
@@ -142,7 +165,7 @@
                     id="count-pedidos">0</span>
             </div>
             <div id="col-pedidos"
-                class="flex-1 bg-secondary/20 rounded-xl p-3 border border-white/5 border-dashed overflow-y-auto sortable-list"
+                class="flex-1 bg-secondary/20 rounded-xl p-3 border border-white/5 border-dashed overflow-y-auto md:max-h-full max-h-[500px] sortable-list"
                 data-status="pedidos">
                 <!-- Cards injected by JS -->
             </div>
@@ -159,7 +182,7 @@
                     id="count-process">0</span>
             </div>
             <div id="col-process"
-                class="flex-1 bg-secondary/20 rounded-xl p-3 border border-white/5 border-dashed overflow-y-auto sortable-list"
+                class="flex-1 bg-secondary/20 rounded-xl p-3 border border-white/5 border-dashed overflow-y-auto md:max-h-full max-h-[500px] sortable-list"
                 data-status="process">
                 <!-- Cards injected by JS -->
             </div>
@@ -176,7 +199,7 @@
                     id="count-completed">0</span>
             </div>
             <div id="col-completed"
-                class="flex-1 bg-secondary/20 rounded-xl p-3 border border-white/5 border-dashed overflow-y-auto sortable-list"
+                class="flex-1 bg-secondary/20 rounded-xl p-3 border border-white/5 border-dashed overflow-y-auto md:max-h-full max-h-[500px] sortable-list"
                 data-status="completed">
                 <!-- Cards injected by JS -->
             </div>
@@ -195,9 +218,16 @@
                 <h2 class="text-xl font-bold text-primary">Detalle del Pedido</h2>
                 <p class="text-muted text-sm" id="drawer-id">ID: #0</p>
             </div>
-            <button onclick="closeDrawer()" class="p-2 hover:bg-white/10 rounded-full transition-colors">
-                <i data-lucide="x" class="w-5 h-5"></i>
-            </button>
+            <div class="flex items-center gap-2">
+                <button id="btn-edit-order" onclick="editOrder(currentOrderId)"
+                    class="p-2 hover:bg-white/10 rounded-full transition-colors text-muted hover:text-primary"
+                    title="Editar Pedido">
+                    <i data-lucide="edit-3" class="w-5 h-5"></i>
+                </button>
+                <button onclick="closeDrawer()" class="p-2 hover:bg-white/10 rounded-full transition-colors">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
         </div>
 
         <!-- Content -->
@@ -219,6 +249,26 @@
                     <div>
                         <label class="text-xs text-muted block uppercase tracking-wide">Entrega</label>
                         <span class="font-medium" id="drawer-time">00:00 AM</span>
+                    </div>
+                </div>
+                <div id="drawer-contact-info" class="space-y-4 pt-2 hidden">
+                    <div class="flex items-center gap-3 text-foreground" id="drawer-phone-container">
+                        <div class="bg-primary/10 p-2 rounded-lg">
+                            <i data-lucide="phone" class="w-5 h-5 text-primary"></i>
+                        </div>
+                        <div>
+                            <label class="text-xs text-muted block uppercase tracking-wide">Teléfono</label>
+                            <span class="font-medium" id="drawer-phone">-</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3 text-foreground" id="drawer-email-container">
+                        <div class="bg-primary/10 p-2 rounded-lg">
+                            <i data-lucide="mail" class="w-5 h-5 text-primary"></i>
+                        </div>
+                        <div>
+                            <label class="text-xs text-muted block uppercase tracking-wide">Correo</label>
+                            <span class="font-medium" id="drawer-email">-</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -276,7 +326,7 @@
             class="bg-card w-full max-w-lg rounded-xl border border-white/10 shadow-2xl transform scale-95 opacity-0 transition-all duration-300 flex flex-col max-h-[90vh]">
             <!-- Header -->
             <div class="p-6 border-b border-white/10 flex justify-between items-center bg-black/20 rounded-t-xl">
-                <h2 class="text-xl font-bold text-primary">Nuevo Pedido</h2>
+                <h2 id="new-order-title" class="text-xl font-bold text-primary">Nuevo Pedido</h2>
                 <button onclick="closeNewOrderModal()"
                     class="p-2 hover:bg-white/10 rounded-full transition-colors text-muted hover:text-foreground">
                     <i data-lucide="x" class="w-5 h-5"></i>
@@ -291,6 +341,24 @@
                     <input type="text" id="new-name"
                         class="w-full bg-secondary/50 border border-white/10 rounded-lg px-4 py-3 text-foreground focus:outline-none focus:border-primary/50 transition-colors"
                         placeholder="Ej. Juan Pérez">
+                </div>
+
+                <!-- Contact Row -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs uppercase tracking-wider text-muted mb-1.5">Teléfono
+                            (Opcional)</label>
+                        <input type="tel" id="new-phone"
+                            class="w-full bg-secondary/50 border border-white/10 rounded-lg px-4 py-3 text-foreground focus:outline-none focus:border-primary/50 transition-colors"
+                            placeholder="Ej. 8112345678">
+                    </div>
+                    <div>
+                        <label class="block text-xs uppercase tracking-wider text-muted mb-1.5">Correo
+                            (Opcional)</label>
+                        <input type="email" id="new-email"
+                            class="w-full bg-secondary/50 border border-white/10 rounded-lg px-4 py-3 text-foreground focus:outline-none focus:border-primary/50 transition-colors"
+                            placeholder="Ej. cliente@correo.com">
+                    </div>
                 </div>
 
                 <!-- Date & Deposit Row -->
@@ -483,21 +551,50 @@
 
     <!-- Scripts -->
     <script>
-        // Data Store
-        let orders = [
-            { id: '1', customerName: 'María Pérez', deliveryDate: '17/01/2026', deliveryTime: '10:00 AM', description: 'Ramo de 12 Rosas Rojas + Chocolates Ferrero. Nota: "Te amo".', totalAmount: 1200, paidAmount: 600, status: 'process', isUrgent: false },
-            { id: '2', customerName: 'Juan Lopez', deliveryDate: '18/01/2026', deliveryTime: '14:30 PM', description: 'Arreglo Orquídeas Blancas en base de cristal. Urgente.', totalAmount: 2500, paidAmount: 2500, status: 'pedidos', isUrgent: false },
-            { id: '3', customerName: 'Hotel Luxury', deliveryDate: '19/01/2026', deliveryTime: '09:00 AM', description: 'Decoración Lobby (Semanal). Lirios y follaje fino.', totalAmount: 5000, paidAmount: 0, status: 'pedidos', isUrgent: true },
-            { id: '4', customerName: 'Ana García', deliveryDate: '17/01/2026', deliveryTime: '18:00 PM', description: 'Caja Sorpresa Girasoles con globo metálico.', totalAmount: 850, paidAmount: 850, status: 'completed', isUrgent: false },
-            { id: '5', customerName: 'Roberto Gomez', deliveryDate: '20/01/2026', deliveryTime: '12:00 PM', description: 'Bouquet Mixto Primavera.', totalAmount: 450, paidAmount: 200, status: 'pedidos', isUrgent: false },
-        ];
+        // Data Store (Will be synced with Firebase)
+        let orders = [];
+
+        function persistData() {
+            // No longer used for localStorage, but kept for legacy calls if needed
+            // The real sync happens via Firestore calls
+        }
+
+        async function saveOrderToCloud(order) {
+            try {
+                await window.fs.setDoc(window.fs.doc(window.db, "orders", order.id), order);
+            } catch (e) {
+                console.error("Error saving to cloud:", e);
+            }
+        }
 
         // --- Initialization ---
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('current-date').textContent = new Date().toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' });
-            renderBoard();
-            updateStats();
-            lucide.createIcons();
+
+            // Real-time synchronization from Firebase
+            const q = window.fs.query(window.fs.collection(window.db, "orders"));
+            window.fs.onSnapshot(q, (querySnapshot) => {
+                const cloudOrders = [];
+                querySnapshot.forEach((doc) => {
+                    cloudOrders.push(doc.data());
+                });
+
+                // If it's the very first time and cloud is empty, migrate LocalStorage
+                if (cloudOrders.length === 0 && orders.length === 0) {
+                    const localData = JSON.parse(localStorage.getItem('kairos_orders'));
+                    if (localData && localData.length > 0) {
+                        console.log("Migrando datos locales a la nube...");
+                        localData.forEach(o => saveOrderToCloud(o));
+                        return; // onSnapshot will trigger again
+                    }
+                }
+
+                orders = cloudOrders;
+                renderBoard();
+                updateStats();
+                lucide.createIcons();
+            });
+
             initDragAndDrop();
         });
 
@@ -618,6 +715,9 @@
                     group: 'kanban',
                     animation: 150,
                     ghostClass: 'drag-ghost',
+                    delay: 150, // Pequeño delay para permitir el scroll natural en móvil
+                    delayOnTouchOnly: true,
+                    touchStartThreshold: 5, // Margen de movimiento antes de iniciar el drag
                     onEnd: function (evt) {
                         const itemEl = evt.item;
                         const newStatus = evt.to.getAttribute('data-status');
@@ -639,6 +739,7 @@
 
                         // Update State
                         order.status = newStatus;
+                        saveOrderToCloud(order);
                         updateStats();
                         updateCounts();
                     }
@@ -657,6 +758,33 @@
             document.getElementById('drawer-client').textContent = order.customerName;
             document.getElementById('drawer-time').textContent = order.deliveryTime;
             document.getElementById('drawer-desc').textContent = order.description;
+
+            // Contact Info
+            const contactContainer = document.getElementById('drawer-contact-info');
+            const phoneContainer = document.getElementById('drawer-phone-container');
+            const emailContainer = document.getElementById('drawer-email-container');
+            const phoneEl = document.getElementById('drawer-phone');
+            const emailEl = document.getElementById('drawer-email');
+
+            let hasContact = false;
+            if (order.customerPhone) {
+                phoneEl.textContent = order.customerPhone;
+                phoneContainer.classList.remove('hidden');
+                hasContact = true;
+            } else {
+                phoneContainer.classList.add('hidden');
+            }
+
+            if (order.customerEmail) {
+                emailEl.textContent = order.customerEmail;
+                emailContainer.classList.remove('hidden');
+                hasContact = true;
+            } else {
+                emailContainer.classList.add('hidden');
+            }
+
+            if (hasContact) contactContainer.classList.remove('hidden');
+            else contactContainer.classList.add('hidden');
 
             const urgentEl = document.getElementById('drawer-urgent');
             if (order.isUrgent) urgentEl.classList.remove('hidden');
@@ -753,6 +881,7 @@
             }
 
             order.status = newStatus;
+            saveOrderToCloud(order);
 
             // Refresh
             closeDrawer();
@@ -780,6 +909,7 @@
                 }
 
                 order.paidAmount += amount;
+                saveOrderToCloud(order);
 
                 // Refresh Drawer & Board
                 renderBoard();
@@ -1356,6 +1486,9 @@
                 return;
             }
 
+            const phone = document.getElementById('new-phone').value;
+            const email = document.getElementById('new-email').value;
+
             // Format date time for display
             const dateObj = new Date(dateInput);
             const timeStr = dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
@@ -1382,24 +1515,132 @@
                 desc = `${pName}${detail} - ${qty} ${unit}`;
             }
 
-            const newOrder = {
-                id: Date.now().toString(),
+            const orderData = {
+                id: editMode ? currentOrderId : Date.now().toString(),
                 customerName: name,
+                customerPhone: phone,
+                customerEmail: email,
                 deliveryDate: dateStr,
                 deliveryTime: timeStr,
                 description: desc,
                 totalAmount: total,
                 paidAmount: deposit,
-                status: 'pedidos',
-                isUrgent: false
+                status: editMode ? orders.find(o => o.id === currentOrderId).status : 'pedidos',
+                isUrgent: editMode ? orders.find(o => o.id === currentOrderId).isUrgent : false
             };
 
-            orders.push(newOrder);
+            if (editMode) {
+                const index = orders.findIndex(o => o.id === currentOrderId);
+                orders[index] = orderData;
+            } else {
+                orders.push(orderData);
+            }
+
+            saveOrderToCloud(orderData);
             renderBoard();
             updateStats();
             closeNewOrderModal();
+            if (editMode) {
+                setTimeout(() => openDrawer(currentOrderId), 400);
+            }
             lucide.createIcons();
         }
+
+        let editMode = false;
+        function editOrder(id) {
+            const order = orders.find(o => o.id === id);
+            if (!order) return;
+
+            editMode = true;
+            currentOrderId = id;
+
+            document.getElementById('new-order-title').textContent = 'Editar Pedido';
+            document.getElementById('new-name').value = order.customerName;
+            document.getElementById('new-phone').value = order.customerPhone || '';
+            document.getElementById('new-email').value = order.customerEmail || '';
+
+            // Convert DD/MM/YYYY to YYYY-MM-DD for datetime-local
+            const parts = order.deliveryDate.split('/');
+            const dateStr = `${parts[2]}-${parts[1]}-${parts[0]}`;
+            // Convert time from AM/PM or whatever to HH:MM
+            // This is tricky, simplified assumption for now or skip updating time for simplicity in this step if complex
+            // Let's try to parse it
+            const [time, period] = order.deliveryTime.split(' ');
+            let [hours, minutes] = time.split(':');
+            if (period === 'PM' && hours !== '12') hours = parseInt(hours) + 12;
+            if (period === 'AM' && hours === '12') hours = '00';
+            const timeStr = `${hours.toString().padStart(2, '0')}:${minutes}`;
+
+            document.getElementById('new-date').value = `${dateStr}T${timeStr}`;
+
+            document.getElementById('new-deposit').value = order.paidAmount;
+
+            // Simplified product mapping back
+            // This needs better logic if products are very dynamic
+            if (order.description.includes('Bouquet & Vino')) {
+                document.getElementById('new-product').value = 'bouquet_vino';
+            } else if (order.description.includes('Paquete Mini')) {
+                document.getElementById('new-product').value = 'paquete_mini';
+            } else if (order.description.includes('Palomitas')) {
+                document.getElementById('new-product').value = 'palomitas';
+            } else if (order.description.includes('Brownie')) {
+                document.getElementById('new-product').value = 'brownie';
+            } else if (order.description.includes('Pretzels')) {
+                document.getElementById('new-product').value = 'pretzels';
+            }
+
+            updateProductOptions();
+
+            // Additional logic to check specific options
+            if (order.description.includes('Essential')) {
+                const radio = document.querySelector('input[name="vinoflor_type"][value="essential"]');
+                if (radio) radio.checked = true;
+            } else if (order.description.includes('Dream')) {
+                const radio = document.querySelector('input[name="vinoflor_type"][value="dream"]');
+                if (radio) radio.checked = true;
+            } else if (order.description.includes('Experience')) {
+                const radio = document.querySelector('input[name="vinoflor_type"][value="experience"]');
+                if (radio) radio.checked = true;
+            }
+
+            // Paquete mini selection
+            if (order.description.includes('Incluye:')) {
+                const optionsStr = order.description.match(/Incluye: (.*)/)[1];
+                const options = optionsStr.split(', ');
+                document.querySelectorAll('input[name="mini-option"]').forEach(cb => {
+                    if (options.includes(cb.value)) cb.checked = true;
+                });
+            }
+
+            // Quantity
+            const qtyMatch = order.description.match(/\((\d+)\)/) || order.description.match(/- (\d+)/);
+            if (qtyMatch) {
+                const qtyInput = document.getElementById('new-quantity');
+                if (qtyInput) qtyInput.value = qtyMatch[1];
+            }
+
+            updateTotal();
+
+            // Close drawer first
+            closeDrawer();
+
+            // Open modal
+            modalBackdrop.classList.remove('hidden');
+            void modalBackdrop.offsetWidth;
+            modalBackdrop.classList.remove('opacity-0');
+            modal.classList.remove('opacity-0', 'scale-95');
+            modal.classList.add('opacity-100', 'scale-100');
+        }
+
+        // Update resetForm to handle editMode
+        const originalResetForm = resetForm;
+        resetForm = function () {
+            originalResetForm();
+            editMode = false;
+            document.getElementById('new-order-title').textContent = 'Nuevo Pedido';
+            document.getElementById('new-phone').value = '';
+            document.getElementById('new-email').value = '';
+        };
 
 
         // --- Receipt Logic ---
@@ -1571,6 +1812,8 @@
             if (order.paidAmount >= order.totalAmount) {
                 order.status = 'completed';
             }
+
+            saveOrderToCloud(order);
 
             renderBoard();
             updateStats();
