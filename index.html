@@ -1180,6 +1180,9 @@
 
             // Reset Footer
             footer.innerHTML = `
+                <button onclick="purgeDatabase()" class="mr-auto px-5 py-2 bg-danger text-white hover:bg-danger/90 text-sm font-bold rounded-lg transition-colors flex items-center shadow-lg shadow-danger/20">
+                    <i data-lucide="trash-2" class="w-4 h-4 mr-2"></i> LIMPIAR DB (PRUEBA)
+                </button>
                 <button onclick="closeReport()" class="px-5 py-2 bg-secondary hover:bg-secondary/80 text-foreground text-sm font-medium rounded-lg transition-colors">
                     Cerrar
                 </button>
@@ -1840,6 +1843,32 @@
             if (input.files && input.files[0]) {
                 status.textContent = "✅ Comprobante capturado";
                 status.classList.add('text-success');
+            }
+        }
+
+        async function purgeDatabase() {
+            if (!confirm("⚠️ ADVERTENCIA CRÍTICA\n\nEstás a punto de ELIMINAR TODOS LOS PEDIDOS de la base de datos de producción.\n\nEsta acción es irreversible. ¿Deseas continuar?")) {
+                return;
+            }
+
+            if (!confirm("¿ESTÁS COMPLETAMENTE SEGURO?\n\nSe borrarán todos los registros de la nube y locales.")) {
+                return;
+            }
+
+            try {
+                console.log("Iniciando purga de datos...");
+
+                // Usamos el array orders local que está sincronizado con Firebase
+                for (const order of orders) {
+                    await window.fs.deleteDoc(window.fs.doc(window.db, "orders", order.id));
+                }
+
+                localStorage.removeItem('kairos_orders');
+                alert("✅ Base de datos purgada exitosamente.");
+                location.reload();
+            } catch (e) {
+                console.error("Error al purgar la base de datos:", e);
+                alert("Error al purgar la base de datos. Ver consola.");
             }
         }
 
