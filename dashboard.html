@@ -1,0 +1,1606 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kairós CRM | Dashboard</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- SortableJS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#D4AF37">
+    <link rel="apple-touch-icon" href="logo.png">
+
+    <!-- Tailwind Config -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        background: "#121212",
+                        card: "#1E1E1E",
+                        foreground: "#E0E0E0",
+                        primary: "#D4AF37", // Gold
+                        secondary: "#2D2D2D",
+                        success: "#10B981",
+                        warning: "#F59E0B",
+                        danger: "#F43F5E",
+                        muted: "#A3A3A3",
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'glow': '0 0 15px rgba(212, 175, 55, 0.15)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #121212;
+            color: #E0E0E0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+
+        .drag-ghost {
+            opacity: 0.4;
+            background: #2D2D2D;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen p-6 md:p-10 max-w-7xl mx-auto">
+
+    <!-- Navbar -->
+    <div class="flex items-center justify-between mb-8">
+        <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-full flex items-center justify-center overflow-hidden border border-white/10">
+                <!-- Icon Only Logo -->
+                <img src="./logo.png" alt="Kairos Logo" class="w-full h-full object-cover scale-[2.5]">
+            </div>
+            <h1 class="text-2xl font-light tracking-wide text-foreground">
+                Kairós <span class="font-bold text-primary">CRM</span>
+            </h1>
+        </div>
+        <div class="text-right">
+            <p class="text-xs text-muted uppercase tracking-widest">Fecha</p>
+            <p class="text-sm font-medium" id="current-date"></p>
+        </div>
+    </div>
+
+    <!-- Header Stats -->
+    <header class="mb-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Card Flujo de Caja -->
+        <div onclick="openCashReport()"
+            class="bg-card p-6 rounded-xl border border-white/5 shadow-glow transition-all hover:-translate-y-1 hover:border-primary/30 cursor-pointer duration-300">
+            <div class="flex justify-between items-start mb-4">
+                <div>
+                    <h3 class="text-muted text-sm font-medium uppercase tracking-wider">Cash</h3>
+                    <p class="text-2xl font-bold text-foreground mt-1" id="total-revenue">$0</p>
+                </div>
+                <div class="relative bg-white/5 p-2 rounded-full">
+                    <i data-lucide="dollar-sign" class="w-6 h-6 text-primary"></i>
+                    <span id="badge-cash"
+                        class="absolute -top-1 -right-1 w-4 h-4 bg-danger text-white text-[10px] font-bold rounded-full flex items-center justify-center border border-[#121212] hidden">0</span>
+                </div>
+            </div>
+            <div class="flex items-center text-sm">
+                <span class="text-danger flex items-center font-medium" id="pending-revenue">$0</span>
+                <span class="text-muted ml-2">pendientes por cobrar</span>
+            </div>
+        </div>
+
+        <!-- Card Operaciones -->
+        <div onclick="openOpsReport()"
+            class="bg-card p-6 rounded-xl border border-white/5 shadow-sm transition-all hover:-translate-y-1 hover:border-primary/30 cursor-pointer duration-300">
+            <div class="flex justify-between items-start mb-4">
+                <div>
+                    <h3 class="text-muted text-sm font-medium uppercase tracking-wider">Mis Pedidos</h3>
+                    <p class="text-2xl font-bold text-foreground mt-1" id="total-orders">0 Pedidos</p>
+                </div>
+                <div class="relative bg-white/5 p-2 rounded-full">
+                    <i data-lucide="clock" class="w-6 h-6 text-white"></i>
+                    <span id="badge-ops"
+                        class="absolute -top-1 -right-1 w-4 h-4 bg-primary text-black text-[10px] font-bold rounded-full flex items-center justify-center border border-[#121212] hidden">0</span>
+                </div>
+            </div>
+            <div class="flex items-center text-sm" id="operations-status">
+                <span class="text-success">Todo bajo control</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Kanban Board -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 h-[calc(100vh-250px)]">
+
+        <!-- Column Pedidos -->
+        <div class="flex flex-col h-full">
+            <div class="flex items-center justify-between mb-4 px-2">
+                <div class="flex items-center gap-2">
+                    <div class="w-2 h-2 rounded-full bg-muted"></div>
+                    <h3 class="font-semibold text-sm uppercase tracking-wider text-muted-foreground">Pedidos</h3>
+                </div>
+                <span class="bg-secondary/50 px-2 py-0.5 rounded text-xs text-muted font-medium"
+                    id="count-pedidos">0</span>
+            </div>
+            <div id="col-pedidos"
+                class="flex-1 bg-secondary/20 rounded-xl p-3 border border-white/5 border-dashed overflow-y-auto sortable-list"
+                data-status="pedidos">
+                <!-- Cards injected by JS -->
+            </div>
+        </div>
+
+        <!-- Column En Proceso -->
+        <div class="flex flex-col h-full">
+            <div class="flex items-center justify-between mb-4 px-2">
+                <div class="flex items-center gap-2">
+                    <div class="w-2 h-2 rounded-full bg-warning"></div>
+                    <h3 class="font-semibold text-sm uppercase tracking-wider text-muted-foreground">En Proceso</h3>
+                </div>
+                <span class="bg-secondary/50 px-2 py-0.5 rounded text-xs text-muted font-medium"
+                    id="count-process">0</span>
+            </div>
+            <div id="col-process"
+                class="flex-1 bg-secondary/20 rounded-xl p-3 border border-white/5 border-dashed overflow-y-auto sortable-list"
+                data-status="process">
+                <!-- Cards injected by JS -->
+            </div>
+        </div>
+
+        <!-- Column Completado -->
+        <div class="flex flex-col h-full">
+            <div class="flex items-center justify-between mb-4 px-2">
+                <div class="flex items-center gap-2">
+                    <div class="w-2 h-2 rounded-full bg-success"></div>
+                    <h3 class="font-semibold text-sm uppercase tracking-wider text-muted-foreground">Completado</h3>
+                </div>
+                <span class="bg-secondary/50 px-2 py-0.5 rounded text-xs text-muted font-medium"
+                    id="count-completed">0</span>
+            </div>
+            <div id="col-completed"
+                class="flex-1 bg-secondary/20 rounded-xl p-3 border border-white/5 border-dashed overflow-y-auto sortable-list"
+                data-status="completed">
+                <!-- Cards injected by JS -->
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Order Drawer (Modal) -->
+    <div id="drawer-backdrop"
+        class="fixed inset-0 bg-black/60 z-40 backdrop-blur-sm hidden transition-opacity opacity-0"></div>
+    <div id="drawer"
+        class="fixed inset-y-0 right-0 w-full max-w-md bg-card border-l border-white/10 shadow-2xl z-50 p-6 flex flex-col transform translate-x-full transition-transform duration-300">
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-8">
+            <div>
+                <h2 class="text-xl font-bold text-primary">Detalle del Pedido</h2>
+                <p class="text-muted text-sm" id="drawer-id">ID: #0</p>
+            </div>
+            <button onclick="closeDrawer()" class="p-2 hover:bg-white/10 rounded-full transition-colors">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <!-- Content -->
+        <div class="flex-1 overflow-y-auto space-y-8 pr-2">
+            <div class="space-y-4">
+                <div class="flex items-center gap-3 text-foreground">
+                    <div class="bg-primary/10 p-2 rounded-lg">
+                        <i data-lucide="user" class="w-5 h-5 text-primary"></i>
+                    </div>
+                    <div>
+                        <label class="text-xs text-muted block uppercase tracking-wide">Cliente</label>
+                        <span class="font-medium text-lg" id="drawer-client">Nombre Cliente</span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3 text-foreground">
+                    <div class="bg-primary/10 p-2 rounded-lg">
+                        <i data-lucide="clock" class="w-5 h-5 text-primary"></i>
+                    </div>
+                    <div>
+                        <label class="text-xs text-muted block uppercase tracking-wide">Entrega</label>
+                        <span class="font-medium" id="drawer-time">00:00 AM</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-secondary/30 p-4 rounded-xl border border-white/5">
+                <label class="text-xs text-muted block uppercase tracking-wide mb-2">Descripción</label>
+                <p class="text-foreground/90 leading-relaxed" id="drawer-desc">Descripción del pedido.</p>
+                <div id="drawer-urgent" class="mt-3 flex items-center text-warning text-sm font-medium hidden">
+                    <i data-lucide="alert-triangle" class="w-4 h-4 mr-2"></i> Pedido Urgente
+                </div>
+            </div>
+
+            <div class="space-y-4">
+                <h3 class="text-lg font-semibold flex items-center gap-2">
+                    <i data-lucide="credit-card" class="w-5 h-5"></i>
+                    Estado Financiero
+                </h3>
+                <div class="bg-secondary p-4 rounded-xl border border-white/5 space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="text-muted">Total</span>
+                        <span class="text-xl font-bold" id="drawer-total">$0</span>
+                    </div>
+                    <div class="flex justify-between items-center text-success">
+                        <span class="opacity-80">Pagado</span>
+                        <span class="font-medium" id="drawer-paid">-$0</span>
+                    </div>
+                    <div class="h-px bg-white/10 my-2"></div>
+                    <div class="flex justify-between items-center font-bold text-lg" id="drawer-balance-container">
+                        <span>Pendiente</span>
+                        <span id="drawer-balance">$0</span>
+                    </div>
+                </div>
+                <div id="drawer-action-btn"></div>
+            </div>
+        </div>
+
+        <div class="pt-6 border-t border-white/10">
+            <button id="btn-view-receipt" onclick="openReceiptModal()"
+                class="w-full py-3 border border-white/10 rounded-lg hover:bg-white/5 transition-colors text-sm font-medium text-muted-foreground">
+                Ver Comprobante
+            </button>
+        </div>
+    </div>
+
+    <!-- Floating Action Button (New Order) -->
+    <button onclick="openNewOrderModal()"
+        class="fixed bottom-6 right-6 w-14 h-14 bg-primary text-black rounded-full shadow-glow flex items-center justify-center hover:scale-110 active:scale-95 transition-transform z-30">
+        <i data-lucide="plus" class="w-8 h-8"></i>
+    </button>
+
+    <!-- New Order Modal -->
+    <div id="new-order-backdrop"
+        class="fixed inset-0 bg-black/80 z-50 backdrop-blur-sm hidden transition-opacity opacity-0 flex items-center justify-center p-4">
+        <div id="new-order-modal"
+            class="bg-card w-full max-w-lg rounded-xl border border-white/10 shadow-2xl transform scale-95 opacity-0 transition-all duration-300 flex flex-col max-h-[90vh]">
+            <!-- Header -->
+            <div class="p-6 border-b border-white/10 flex justify-between items-center bg-black/20 rounded-t-xl">
+                <h2 class="text-xl font-bold text-primary">Nuevo Pedido</h2>
+                <button onclick="closeNewOrderModal()"
+                    class="p-2 hover:bg-white/10 rounded-full transition-colors text-muted hover:text-foreground">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Body -->
+            <div class="p-6 overflow-y-auto custom-scrollbar space-y-5">
+                <!-- Name -->
+                <div>
+                    <label class="block text-xs uppercase tracking-wider text-muted mb-1.5">Nombre del Cliente</label>
+                    <input type="text" id="new-name"
+                        class="w-full bg-secondary/50 border border-white/10 rounded-lg px-4 py-3 text-foreground focus:outline-none focus:border-primary/50 transition-colors"
+                        placeholder="Ej. Juan Pérez">
+                </div>
+
+                <!-- Date & Deposit Row -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs uppercase tracking-wider text-muted mb-1.5">Fecha de Entrega</label>
+                        <input type="datetime-local" id="new-date"
+                            class="w-full bg-secondary/50 border border-white/10 rounded-lg px-4 py-3 text-foreground focus:outline-none focus:border-primary/50 transition-colors [color-scheme:dark]">
+                    </div>
+                    <div>
+                        <label class="block text-xs uppercase tracking-wider text-muted mb-1.5">Anticipo ($)</label>
+                        <input type="number" id="new-deposit" min="0"
+                            class="w-full bg-secondary/50 border border-white/10 rounded-lg px-4 py-3 text-foreground focus:outline-none focus:border-primary/50 transition-colors"
+                            placeholder="0.00" oninput="calculateTotal()">
+                    </div>
+                </div>
+
+                <!-- Product Selection -->
+                <div>
+                    <label class="text-xs font-semibold text-muted uppercase tracking-wider mb-1">Producto</label>
+                    <div class="relative">
+                        <select id="new-product" onchange="updateProductOptions()"
+                            class="w-full bg-secondary/50 border border-white/10 rounded-lg p-2.5 text-foreground focus:outline-none focus:border-primary transition-colors appearance-none cursor-pointer">
+                            <option value="" disabled selected>Selecciona...</option>
+                            <option value="bouquet_vino">Bouquet & Vino</option>
+                            <option value="palomitas">Palomitas</option>
+                            <option value="brownie">Brownies 4pz</option>
+                            <option value="pretzels">Pretzels</option>
+                            <option value="paquete_mini">Paquete "Mini"</option>
+                        </select>
+                        <i data-lucide="chevron-down"
+                            class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted pointer-events-none"></i>
+                    </div>
+                </div>
+
+                <!-- Dynamic Options Area -->
+                <div id="dynamic-options" class="hidden">
+                    <!-- Injected by JS -->
+                </div>
+
+                <!-- Total Display -->
+                <div class="bg-secondary/30 p-4 rounded-xl border border-white/5 flex justify-between items-center">
+                    <span class="text-muted font-medium">Total Estimado</span>
+                    <span id="new-total" class="text-xl font-bold text-primary">$0.00</span>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="p-6 border-t border-white/10 bg-black/20 rounded-b-xl flex gap-3">
+                <button onclick="confirmDiscardOrder()"
+                    class="flex-1 py-3 border border-danger/30 text-danger hover:bg-danger/10 rounded-lg font-medium transition-colors">
+                    Borrar
+                </button>
+                <button onclick="saveNewOrder()"
+                    class="flex-[2] py-3 bg-primary text-black font-bold rounded-lg hover:bg-primary/90 shadow-glow transition-all">
+                    Aceptar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Generic Report Modal -->
+    <div id="report-backdrop"
+        class="fixed inset-0 bg-black/60 z-50 backdrop-blur-sm hidden transition-opacity opacity-0 flex items-center justify-center p-4">
+        <div id="report-modal"
+            class="bg-card w-full max-w-2xl rounded-xl border border-white/10 shadow-2xl transform scale-95 opacity-0 transition-all duration-300 max-h-[85vh] flex flex-col">
+            <div class="p-6 border-b border-white/10 flex justify-between items-center bg-black/20 rounded-t-xl">
+                <h2 id="report-title" class="text-xl font-bold text-primary">Reporte</h2>
+                <button onclick="closeReport()" class="p-2 hover:bg-white/10 rounded-full transition-colors">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div id="report-content" class="p-6 overflow-y-auto custom-scrollbar">
+                <!-- Content injected by JS -->
+            </div>
+            <div id="report-footer" class="p-6 border-t border-white/10 bg-black/20 rounded-b-xl flex justify-end">
+                <button onclick="closeReport()"
+                    class="px-5 py-2 bg-secondary hover:bg-secondary/80 text-foreground text-sm font-medium rounded-lg transition-colors">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Modal -->
+    <div id="payment-backdrop"
+        class="fixed inset-0 bg-black/80 z-[70] backdrop-blur-sm hidden transition-opacity opacity-0 flex items-center justify-center p-4">
+        <div id="payment-modal"
+            class="bg-card w-full max-w-sm rounded-xl border border-white/10 shadow-2xl transform scale-95 opacity-0 transition-all duration-300">
+            <div class="p-6">
+                <h2 class="text-xl font-bold text-white mb-6 flex items-center">
+                    <i data-lucide="wallet" class="w-5 h-5 mr-2 text-success"></i> Registrar Abono
+                </h2>
+
+                <!-- Amount to Pay -->
+                <div class="mb-5">
+                    <label class="block text-xs uppercase tracking-wider text-muted mb-1.5">Monto a Pagar ($)</label>
+                    <input type="number" id="payment-amount" oninput="calculateChange()"
+                        class="w-full bg-secondary/50 border border-white/10 rounded-lg px-4 py-3 text-foreground focus:outline-none focus:border-success/50 transition-colors font-bold text-2xl text-center"
+                        placeholder="0.00">
+                </div>
+
+                <!-- Method Selection -->
+                <div class="mb-5">
+                    <label class="block text-xs uppercase tracking-wider text-muted mb-2">Método de Pago</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <label class="cursor-pointer">
+                            <input type="radio" name="payment_method" value="transfer" class="peer sr-only"
+                                onchange="togglePaymentMethod()" checked>
+                            <div
+                                class="p-3 border border-white/10 rounded-lg text-center peer-checked:bg-primary/20 peer-checked:border-primary peer-checked:text-primary transition-all hover:bg-white/5">
+                                <i data-lucide="smartphone" class="w-5 h-5 mx-auto mb-1"></i>
+                                <span class="text-xs font-bold">Transferencia</span>
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="payment_method" value="cash" class="peer sr-only"
+                                onchange="togglePaymentMethod()">
+                            <div
+                                class="p-3 border border-white/10 rounded-lg text-center peer-checked:bg-success/20 peer-checked:border-success peer-checked:text-success transition-all hover:bg-white/5">
+                                <i data-lucide="banknote" class="w-5 h-5 mx-auto mb-1"></i>
+                                <span class="text-xs font-bold">Efectivo</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Section: Transfer Details -->
+                <div id="pay-info-transfer"
+                    class="bg-secondary/30 p-4 rounded-lg border border-white/5 space-y-3 mb-4 hidden">
+                    <div class="flex justify-between border-b border-white/5 pb-2">
+                        <span class="text-muted text-xs uppercase">Banco</span>
+                        <span class="font-bold text-white text-right">Mercado libre</span>
+                    </div>
+                    <div class="flex flex-col border-b border-white/5 pb-2">
+                        <span class="text-muted text-xs uppercase mb-1">Titular</span>
+                        <span class="font-bold text-white">Milton Martinez</span>
+                    </div>
+                    <div class="flex flex-col border-b border-white/5 pb-2">
+                        <span class="text-muted text-xs uppercase mb-1">CLABE</span>
+                        <span class="font-mono text-sm text-white tracking-wide">83746590283</span>
+                    </div>
+                    <div class="flex flex-col border-b border-white/5 pb-2">
+                        <span class="text-muted text-xs uppercase mb-1">Tarjeta</span>
+                        <span class="font-mono text-sm text-white tracking-wide">4333 4556 2132 5664</span>
+                    </div>
+
+                    <!-- Camera Option (Optional) -->
+                    <div class="pt-2">
+                        <input type="file" id="capture-receipt" accept="image/*" capture="camera" class="hidden"
+                            onchange="handlePhotoSelection()">
+                        <button onclick="document.getElementById('capture-receipt').click()"
+                            class="w-full py-2 bg-white/5 border border-dashed border-white/20 rounded-lg text-muted hover:text-foreground hover:border-primary/50 transition-all flex items-center justify-center gap-2 group">
+                            <i data-lucide="camera" class="w-4 h-4 group-hover:text-primary transition-colors"></i>
+                            <span class="text-xs font-medium" id="photo-status">Adjuntar comprobante (Opcional)</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Section: Cash Calculator -->
+                <div id="pay-info-cash" class="space-y-4 mb-4 hidden">
+                    <div>
+                        <label class="block text-xs uppercase tracking-wider text-muted mb-1.5">Monto Recibido
+                            ($)</label>
+                        <input type="number" id="cash-received" oninput="calculateChange()"
+                            class="w-full bg-secondary/50 border border-white/10 rounded-lg px-4 py-3 text-foreground focus:outline-none focus:border-success/50 transition-colors text-lg"
+                            placeholder="Ingrese cantidad recibida">
+                    </div>
+
+                    <div class="bg-black/20 p-4 rounded-lg text-center border border-white/5">
+                        <span class="text-xs text-muted block uppercase tracking-wider mb-1"
+                            id="change-label">Cambio</span>
+                        <span class="text-2xl font-bold text-muted" id="cash-change">$0.00</span>
+                    </div>
+                </div>
+
+                <div class="flex gap-3 pt-2">
+                    <button onclick="closePaymentModal()"
+                        class="flex-1 py-3 border border-white/10 rounded-lg hover:bg-white/5 transition-colors text-sm font-medium text-muted-foreground">
+                        Cancelar
+                    </button>
+                    <button onclick="submitPayment()"
+                        class="flex-1 py-3 bg-success text-white rounded-lg hover:bg-success/90 transition-colors text-sm font-bold shadow-lg shadow-success/20 flex items-center justify-center">
+                        <span id="btn-pay-text">Aceptar</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        // Data Store
+        let orders = [
+            { id: '1', customerName: 'María Pérez', deliveryDate: '17/01/2026', deliveryTime: '10:00 AM', description: 'Ramo de 12 Rosas Rojas + Chocolates Ferrero. Nota: "Te amo".', totalAmount: 1200, paidAmount: 600, status: 'process', isUrgent: false },
+            { id: '2', customerName: 'Juan Lopez', deliveryDate: '18/01/2026', deliveryTime: '14:30 PM', description: 'Arreglo Orquídeas Blancas en base de cristal. Urgente.', totalAmount: 2500, paidAmount: 2500, status: 'pedidos', isUrgent: false },
+            { id: '3', customerName: 'Hotel Luxury', deliveryDate: '19/01/2026', deliveryTime: '09:00 AM', description: 'Decoración Lobby (Semanal). Lirios y follaje fino.', totalAmount: 5000, paidAmount: 0, status: 'pedidos', isUrgent: true },
+            { id: '4', customerName: 'Ana García', deliveryDate: '17/01/2026', deliveryTime: '18:00 PM', description: 'Caja Sorpresa Girasoles con globo metálico.', totalAmount: 850, paidAmount: 850, status: 'completed', isUrgent: false },
+            { id: '5', customerName: 'Roberto Gomez', deliveryDate: '20/01/2026', deliveryTime: '12:00 PM', description: 'Bouquet Mixto Primavera.', totalAmount: 450, paidAmount: 200, status: 'pedidos', isUrgent: false },
+        ];
+
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('current-date').textContent = new Date().toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' });
+            renderBoard();
+            updateStats();
+            lucide.createIcons();
+            initDragAndDrop();
+        });
+
+        // --- Rendering ---
+        function renderBoard() {
+            // Clear columns
+            ['pedidos', 'process', 'completed'].forEach(status => {
+                document.getElementById(`col-${status}`).innerHTML = '';
+            });
+
+            orders.forEach(order => {
+                const card = createCard(order);
+                document.getElementById(`col-${order.status}`).appendChild(card);
+            });
+
+            updateCounts();
+        }
+
+        function createCard(order) {
+            const el = document.createElement('div');
+            el.className = 'group relative bg-card rounded-lg p-3 border border-white/5 hover:border-primary/20 hover:shadow-glow transition-all mb-3 cursor-pointer';
+            el.setAttribute('data-id', order.id);
+            // Open drawer on click
+            el.onclick = () => openDrawer(order.id);
+
+            const percentPaid = Math.min(100, (order.paidAmount / order.totalAmount) * 100);
+            const isPaid = percentPaid >= 100;
+            const isDebt = percentPaid === 0;
+            const balance = order.totalAmount - order.paidAmount;
+
+            const statusColor = isPaid ? "text-success" : "text-danger"; // Red for any debt
+            const progressBarColor = isPaid ? "bg-success" : "bg-danger";
+            const statusText = isPaid ? "Pagado" : `Pendiente: $${balance.toLocaleString()}`;
+
+            el.innerHTML = `
+                <div class="flex gap-3 mb-3 pointer-events-none">
+                    <div class="w-12 h-12 relative rounded-md overflow-hidden bg-neutral-800 flex-shrink-0 flex items-center justify-center text-xs text-muted">
+                         <i data-lucide="package" class="w-6 h-6 text-muted-foreground"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <h4 class="text-sm font-medium text-foreground truncate">${order.customerName}</h4>
+                        <div class="flex items-center text-xs text-muted mt-1">
+                            <i data-lucide="clock" class="w-3 h-3 mr-1"></i>
+                            ${order.deliveryTime}
+                        </div>
+                    </div>
+                </div>
+                <p class="text-xs text-muted/80 line-clamp-2 mb-3 pointer-events-none">
+                    ${order.description}
+                </p>
+                <div class="space-y-1.5 pointer-events-none">
+                    <div class="flex justify-between text-xs">
+                        <span class="font-medium ${statusColor}">${statusText}</span>
+                        <span class="text-muted/60">${Math.round(percentPaid)}%</span>
+                    </div>
+                    <div class="h-1.5 w-full bg-neutral-800 rounded-full overflow-hidden">
+                        <div class="h-full rounded-full ${progressBarColor}" style="width: ${percentPaid}%"></div>
+                    </div>
+                </div>
+            `;
+            return el;
+        }
+
+        function updateStats() {
+            const totalRecaudado = orders.reduce((acc, order) => acc + order.paidAmount, 0);
+            const totalPendiente = orders.reduce((acc, order) => acc + (order.totalAmount - order.paidAmount), 0);
+            const criticalOrders = orders.filter(o => o.isUrgent).length;
+
+            // Notification Badge Counts
+            const pendingPaymentCount = orders.filter(o => o.paidAmount < o.totalAmount).length;
+            const newOrdersCount = orders.filter(o => o.status === 'pedidos').length;
+
+            document.getElementById('total-revenue').textContent = `$${totalRecaudado.toLocaleString()}`;
+            document.getElementById('pending-revenue').textContent = `$${totalPendiente.toLocaleString()}`;
+            document.getElementById('total-orders').textContent = `${orders.length} Pedidos`;
+
+            // Update Badges
+            const cashBadge = document.getElementById('badge-cash');
+            if (pendingPaymentCount > 0) {
+                cashBadge.textContent = pendingPaymentCount;
+                cashBadge.classList.remove('hidden');
+            } else {
+                cashBadge.classList.add('hidden');
+            }
+
+            const opsBadge = document.getElementById('badge-ops');
+            if (newOrdersCount > 0) {
+                opsBadge.textContent = newOrdersCount;
+                opsBadge.classList.remove('hidden');
+            } else {
+                opsBadge.classList.add('hidden');
+            }
+
+            const opsContainer = document.getElementById('operations-status');
+            if (criticalOrders > 0) {
+                opsContainer.innerHTML = `
+                    <i data-lucide="alert-circle" class="w-4 h-4 text-warning mr-2"></i>
+                    <span class="text-warning font-medium">${criticalOrders} Entregas Críticas</span>
+                `;
+            } else {
+                opsContainer.innerHTML = '<span class="text-success">Todo bajo control</span>';
+            }
+            lucide.createIcons();
+        }
+
+        function updateCounts() {
+            ['pedidos', 'process', 'completed'].forEach(status => {
+                const count = orders.filter(o => o.status === status).length;
+                document.getElementById(`count-${status}`).textContent = count;
+            });
+        }
+
+        // --- Drag & Drop ---
+        function initDragAndDrop() {
+            const containers = document.querySelectorAll('.sortable-list');
+            containers.forEach(container => {
+                new Sortable(container, {
+                    group: 'kanban',
+                    animation: 150,
+                    ghostClass: 'drag-ghost',
+                    onEnd: function (evt) {
+                        const itemEl = evt.item;
+                        const newStatus = evt.to.getAttribute('data-status');
+                        const orderId = itemEl.getAttribute('data-id');
+                        const order = orders.find(o => o.id === orderId);
+
+                        if (!order || order.status === newStatus) return;
+
+                        // Validation Logic: Check balance if moving to 'completed'
+                        if (newStatus === 'completed') {
+                            const balance = order.totalAmount - order.paidAmount;
+                            if (balance > 0) {
+                                alert(`⛔ Bloqueo Financiero\n\nEl pedido de ${order.customerName} tiene un saldo pendiente de $${balance}.\nNo se puede marcar como Completado.`);
+                                // Revert move
+                                evt.from.appendChild(itemEl);
+                                return;
+                            }
+                        }
+
+                        // Update State
+                        order.status = newStatus;
+                        updateStats();
+                        updateCounts();
+                    }
+                });
+            });
+        }
+
+        // --- Drawer Logic ---
+        function openDrawer(id) {
+            const order = orders.find(o => o.id === id);
+            if (!order) return;
+
+            currentOrderId = id;
+
+            document.getElementById('drawer-id').textContent = `ID: #${order.id}`;
+            document.getElementById('drawer-client').textContent = order.customerName;
+            document.getElementById('drawer-time').textContent = order.deliveryTime;
+            document.getElementById('drawer-desc').textContent = order.description;
+
+            const urgentEl = document.getElementById('drawer-urgent');
+            if (order.isUrgent) urgentEl.classList.remove('hidden');
+            else urgentEl.classList.add('hidden');
+
+            document.getElementById('drawer-total').textContent = `$${order.totalAmount.toLocaleString()}`;
+            document.getElementById('drawer-paid').textContent = `-$${order.paidAmount.toLocaleString()}`;
+
+            const balance = order.totalAmount - order.paidAmount;
+            const balanceEl = document.getElementById('drawer-balance');
+            const balanceContainer = document.getElementById('drawer-balance-container');
+
+            balanceEl.textContent = `$${balance.toLocaleString()}`;
+            balanceContainer.className = `flex justify-between items-center font-bold text-lg ${balance === 0 ? 'text-success' : 'text-danger'}`;
+
+            // Setup Action Buttons
+            const actionContainer = document.getElementById('drawer-action-btn');
+            const viewReceiptBtn = document.getElementById('btn-view-receipt');
+
+            // Logic for Receipt Button
+            if (order.paidAmount > 0) {
+                viewReceiptBtn.classList.remove('hidden');
+            } else {
+                viewReceiptBtn.classList.add('hidden'); // No payment, no receipt
+            }
+            let buttonsHtml = '<div class="grid gap-3">';
+
+            // Button: Pagar
+            if (balance > 0) {
+                buttonsHtml += `
+                    <button onclick="registerPayment('${order.id}')" class="w-full py-3 bg-secondary hover:bg-secondary/80 text-foreground border border-white/10 rounded-lg font-medium transition-colors flex items-center justify-center">
+                        <i data-lucide="dollar-sign" class="w-4 h-4 mr-2 text-success"></i> Pagar / Abonar
+                    </button>
+                `;
+            } else {
+                buttonsHtml += `
+                    <div class="w-full py-3 bg-success/10 text-success rounded-lg border border-success/20 font-medium text-center flex items-center justify-center">
+                        <i data-lucide="check-circle" class="w-4 h-4 mr-2"></i> Pagado
+                    </div>
+                `;
+            }
+
+            // Buttons: Iniciar / Terminar
+            // "Iniciar Pedido" if status is 'pedidos'
+            if (order.status === 'pedidos') {
+                buttonsHtml += `
+                    <button onclick="updateOrderStatus('${order.id}', 'process')" class="w-full py-3 bg-primary text-black hover:bg-primary/90 rounded-lg font-bold shadow-glow transition-all flex items-center justify-center">
+                        <i data-lucide="play" class="w-4 h-4 mr-2"></i> Iniciar Pedido
+                    </button>
+                `;
+            }
+            // "Terminado" if status is 'process' (or 'pedidos' if we want to allow skip)
+            else if (order.status === 'process') {
+                buttonsHtml += `
+                    <button onclick="updateOrderStatus('${order.id}', 'completed')" class="w-full py-3 bg-success text-white hover:bg-success/90 rounded-lg font-bold shadow-glow transition-all flex items-center justify-center">
+                        <i data-lucide="check" class="w-4 h-4 mr-2"></i> Terminado
+                    </button>
+                `;
+            }
+            else if (order.status === 'completed') {
+                buttonsHtml += `
+                    <div class="text-center text-xs text-muted uppercase tracking-widest mt-2">Pedido Completado</div>
+                `;
+            }
+
+            buttonsHtml += '</div>';
+            actionContainer.innerHTML = buttonsHtml;
+
+
+            // Show Drawer
+            const backdrop = document.getElementById('drawer-backdrop');
+            const drawer = document.getElementById('drawer');
+
+            backdrop.classList.remove('hidden');
+            // Trigger reflow
+            void backdrop.offsetWidth;
+            backdrop.classList.remove('opacity-0');
+
+            drawer.classList.remove('translate-x-full');
+            lucide.createIcons();
+        }
+
+        function updateOrderStatus(id, newStatus) {
+            const order = orders.find(o => o.id === id);
+            if (!order) return;
+
+            // Validation Logic: Check balance if moving to 'completed'
+            if (newStatus === 'completed') {
+                const balance = order.totalAmount - order.paidAmount;
+                if (balance > 0) {
+                    alert(`⛔ Bloqueo Financiero\n\nEl pedido tiene un saldo pendiente de $${balance.toLocaleString()}.\nNo se puede marcar como Terminado.`);
+                    return;
+                }
+            }
+
+            order.status = newStatus;
+
+            // Refresh
+            closeDrawer();
+            renderBoard();
+            updateStats();
+        }
+
+        function registerPayment(id) {
+            const order = orders.find(o => o.id === id);
+            if (!order) return;
+
+            const balance = order.totalAmount - order.paidAmount;
+            const amountStr = prompt(`Saldo pendiente: $${balance.toLocaleString()}\n\nIngrese monto a abonar:`, balance);
+
+            if (amountStr !== null) {
+                const amount = parseFloat(amountStr);
+                if (isNaN(amount) || amount <= 0) {
+                    alert('Monto inválido.');
+                    return;
+                }
+
+                if (amount > balance) {
+                    alert('El monto excede el saldo pendiente.');
+                    return;
+                }
+
+                order.paidAmount += amount;
+
+                // Refresh Drawer & Board
+                renderBoard();
+                updateStats(); // Update header stats
+                openDrawer(id); // Re-render payment buttons in drawer
+            }
+        }
+
+        function closeDrawer() {
+            const backdrop = document.getElementById('drawer-backdrop');
+            const drawer = document.getElementById('drawer');
+
+            backdrop.classList.add('opacity-0');
+            drawer.classList.add('translate-x-full');
+
+            setTimeout(() => {
+                backdrop.classList.add('hidden');
+            }, 300);
+        }
+
+        document.getElementById('drawer-backdrop').addEventListener('click', closeDrawer);
+
+
+        // --- REPORT LOGIC ---
+
+        function openCashReport(filterStatus = 'all') {
+            const title = document.getElementById('report-title');
+            const content = document.getElementById('report-content');
+            const footer = document.getElementById('report-footer');
+
+            title.textContent = "Reporte Financiero (Flujo de Caja)";
+
+            // Helper to generate list items
+            const getList = (statusFilter, label) => {
+                let filtered = [];
+                // Special filter logic based on payment status
+                if (statusFilter === 'nuevos') {
+                    filtered = orders.filter(o => o.paidAmount === 0);
+                } else if (statusFilter === 'anticipo') {
+                    filtered = orders.filter(o => o.paidAmount > 0 && o.paidAmount < o.totalAmount);
+                } else if (statusFilter === 'pagados') {
+                    filtered = orders.filter(o => o.paidAmount >= o.totalAmount);
+                }
+
+                if (filtered.length === 0) return `<p class="text-muted text-sm italic mb-4">No hay pedidos en ${label.toLowerCase()}.</p>`;
+
+                return `
+                    <ul class="space-y-2 mb-6">
+                        ${filtered.map(o => {
+                    const pending = o.totalAmount - o.paidAmount;
+
+                    let actionBtn = '';
+                    if (pending > 0) {
+                        actionBtn = `
+                                    <button onclick="event.stopPropagation(); openPaymentModal('${o.id}')" title="Registrar Pagar" class="p-1.5 rounded-full bg-success/10 hover:bg-success/20 text-success transition-colors ml-2 border border-success/30">
+                                        <i data-lucide="dollar-sign" class="w-4 h-4"></i>
+                                    </button>
+                                 `;
+                    }
+
+                    return `
+                            <li class="flex justify-between items-center bg-secondary/30 p-3 rounded-lg border border-white/5 hover:border-white/10 transition-colors">
+                                <div class="flex flex-col">
+                                    <span class="text-foreground text-sm font-medium">${o.customerName}</span>
+                                    <span class="text-xs text-muted mt-0.5">Deuda: <span class="text-danger font-bold">$${pending.toLocaleString()}</span></span>
+                                </div>
+                                <div class="flex items-center">
+                                    <span class="text-sm font-bold text-muted mr-2">$${o.totalAmount.toLocaleString()}</span>
+                                    ${actionBtn}
+                                </div>
+                            </li>
+                        `}).join('')}
+                    </ul>
+                `;
+            };
+
+            // Filter Buttons HTML
+            const buttonsHtml = `
+                <div class="flex gap-2 overflow-x-auto pb-4 mb-2 no-scrollbar">
+                     <button onclick="openCashReport('all')" class="px-3 py-1.5 rounded-full text-xs font-bold border transition-colors ${filterStatus === 'all' ? 'bg-white text-black border-white' : 'bg-transparent text-muted border-white/10 hover:border-white/30'}">
+                        Todos
+                    </button>
+                    <button onclick="openCashReport('pending')" class="px-3 py-1.5 rounded-full text-xs font-bold border transition-colors ${filterStatus === 'pending' ? 'bg-danger text-white border-danger' : 'bg-transparent text-danger border-danger/30 hover:bg-danger/10'}">
+                        Nuevos (0%)
+                    </button>
+                    <button onclick="openCashReport('partial')" class="px-3 py-1.5 rounded-full text-xs font-bold border transition-colors ${filterStatus === 'partial' ? 'bg-warning text-black border-warning' : 'bg-transparent text-warning border-warning/30 hover:bg-warning/10'}">
+                        Anticipo
+                    </button>
+                    <button onclick="openCashReport('completed')" class="px-3 py-1.5 rounded-full text-xs font-bold border transition-colors ${filterStatus === 'completed' ? 'bg-success text-white border-success' : 'bg-transparent text-success border-success/30 hover:bg-success/10'}">
+                        Pagados (100%)
+                    </button>
+                </div>
+            `;
+
+            // Sections
+            const pendingSection = `
+                <div id="sec-cash-pending" class="${filterStatus === 'all' || filterStatus === 'pending' ? '' : 'hidden'}">
+                    <h3 class="text-danger font-bold text-sm uppercase tracking-wider mb-2 flex items-center">
+                        <i data-lucide="alert-circle" class="w-4 h-4 mr-2"></i> Nuevos (Pendiente)
+                    </h3>
+                     ${getList('nuevos', 'Nuevos')}
+                     ${filterStatus === 'all' ? '<div class="h-px bg-white/10 mb-6"></div>' : ''}
+                </div>
+            `;
+
+            const partialSection = `
+                <div id="sec-cash-partial" class="${filterStatus === 'all' || filterStatus === 'partial' ? '' : 'hidden'}">
+                    <h3 class="text-warning font-bold text-sm uppercase tracking-wider mb-2 flex items-center">
+                        <i data-lucide="pie-chart" class="w-4 h-4 mr-2"></i> Anticipo (Parcial)
+                    </h3>
+                     ${getList('anticipo', 'Anticipo')}
+                     ${filterStatus === 'all' ? '<div class="h-px bg-white/10 mb-6"></div>' : ''}
+                </div>
+            `;
+
+            const completedSection = `
+                <div id="sec-cash-completed" class="${filterStatus === 'all' || filterStatus === 'completed' ? '' : 'hidden'}">
+                    <h3 class="text-success font-bold text-sm uppercase tracking-wider mb-2 flex items-center">
+                        <i data-lucide="check-circle" class="w-4 h-4 mr-2"></i> Completado (Pagado)
+                    </h3>
+                    ${getList('pagados', 'Completado')}
+                </div>
+            `;
+
+            // Assemble: Buttons + reordered sections (Pending -> Partial -> Completed)
+            content.innerHTML = `
+                <div class="space-y-2">
+                     ${buttonsHtml}
+                    <div class="mt-4">
+                        ${pendingSection}
+                        ${partialSection}
+                        ${completedSection}
+                    </div>
+                </div>
+            `;
+
+            // Inject Export Button
+            footer.innerHTML = `
+                <button onclick="exportToExcel()" class="mr-3 px-5 py-2 bg-primary text-black hover:bg-primary/90 text-sm font-bold rounded-lg transition-colors shadow-glow flex items-center">
+                    <i data-lucide="download" class="w-4 h-4 mr-2"></i> Exportar Excel
+                </button>
+                <button onclick="closeReport()" class="px-5 py-2 bg-secondary hover:bg-secondary/80 text-foreground text-sm font-medium rounded-lg transition-colors">
+                    Cerrar
+                </button>
+            `;
+
+            showReportModal();
+            lucide.createIcons();
+        }
+
+        function openOpsReport(filterStatus = 'all') {
+            const title = document.getElementById('report-title');
+            const content = document.getElementById('report-content');
+            const footer = document.getElementById('report-footer');
+
+            title.textContent = "Reporte de Operaciones";
+
+            // Helper to generate list items
+            const getList = (statusFilter, label) => {
+                const filtered = orders.filter(o => o.status === statusFilter);
+                if (filtered.length === 0) return `<p class="text-muted text-sm italic mb-4">No hay pedidos ${label.toLowerCase()}.</p>`;
+
+                return `
+                    <ul class="space-y-2 mb-6">
+                        ${filtered.map(o => {
+                    let actionBtns = '';
+
+                    // Download Receipt (Always visible)
+                    actionBtns += `
+                                <button onclick="event.stopPropagation(); openReceiptModal('${o.id}')" title="Descargar Comprobante" class="p-1.5 rounded-full bg-white/5 hover:bg-white/10 text-muted hover:text-foreground transition-colors">
+                                    <i data-lucide="arrow-down" class="w-4 h-4"></i>
+                                </button>
+                            `;
+
+                    // Start Order (Only for 'pedidos')
+                    if (o.status === 'pedidos') {
+                        actionBtns += `
+                                    <button onclick="event.stopPropagation(); updateOrderStatus('${o.id}', 'process'); setTimeout(() => openOpsReport('all'), 300)" title="Iniciar Pedido" class="p-1.5 rounded-full bg-primary/10 hover:bg-primary/20 text-primary transition-colors ml-1">
+                                        <i data-lucide="play" class="w-4 h-4"></i>
+                                    </button>
+                                `;
+                    }
+
+                    // Complete Order (Only for 'process')
+                    if (o.status === 'process') {
+                        actionBtns += `
+                                    <button onclick="event.stopPropagation(); updateOrderStatus('${o.id}', 'completed'); setTimeout(() => openOpsReport('all'), 300)" title="Completar Pedido" class="p-1.5 rounded-full bg-success/10 hover:bg-success/20 text-success transition-colors ml-1">
+                                        <i data-lucide="check" class="w-4 h-4"></i>
+                                    </button>
+                                `;
+                    }
+
+                    return `
+                                <li class="flex justify-between items-center bg-secondary/30 p-3 rounded-lg border border-white/5 hover:border-white/10 transition-colors">
+                                    <div class="flex flex-col">
+                                        <span class="text-foreground text-sm font-medium">${o.customerName}</span>
+                                        <span class="text-xs text-muted mt-0.5">${o.deliveryDate} - ${o.deliveryTime}</span>
+                                    </div>
+                                    <div class="flex items-center">
+                                        ${actionBtns}
+                                    </div>
+                                </li>
+                            `;
+                }).join('')}
+                    </ul>
+                `;
+            };
+
+            // Filter Buttons HTML
+            const buttonsHtml = `
+                <div class="flex gap-2 overflow-x-auto pb-4 mb-2 no-scrollbar">
+                     <button onclick="openOpsReport('all')" class="px-3 py-1.5 rounded-full text-xs font-bold border transition-colors ${filterStatus === 'all' ? 'bg-white text-black border-white' : 'bg-transparent text-muted border-white/10 hover:border-white/30'}">
+                        Todos
+                    </button>
+                    <button onclick="openOpsReport('pedidos')" class="px-3 py-1.5 rounded-full text-xs font-bold border transition-colors ${filterStatus === 'pedidos' ? 'bg-danger text-white border-danger' : 'bg-transparent text-danger border-danger/30 hover:bg-danger/10'}">
+                        Pendientes
+                    </button>
+                    <button onclick="openOpsReport('process')" class="px-3 py-1.5 rounded-full text-xs font-bold border transition-colors ${filterStatus === 'process' ? 'bg-warning text-black border-warning' : 'bg-transparent text-warning border-warning/30 hover:bg-warning/10'}">
+                        En Proceso
+                    </button>
+                    <button onclick="openOpsReport('completed')" class="px-3 py-1.5 rounded-full text-xs font-bold border transition-colors ${filterStatus === 'completed' ? 'bg-success text-white border-success' : 'bg-transparent text-success border-success/30 hover:bg-success/10'}">
+                        Completados
+                    </button>
+                </div>
+            `;
+
+            // Sections
+            const pendingSection = `
+                <div id="sec-pedidos" class="${filterStatus === 'all' || filterStatus === 'pedidos' ? '' : 'hidden'}">
+                    <h3 class="text-danger font-bold text-sm uppercase tracking-wider mb-2 flex items-center">
+                        <i data-lucide="clipboard-list" class="w-4 h-4 mr-2"></i> Pendientes (Nuevos)
+                    </h3>
+                    ${getList('pedidos', 'Pendientes')}
+                     ${filterStatus === 'all' ? '<div class="h-px bg-white/10 mb-6"></div>' : ''}
+                </div>
+            `;
+
+            const processSection = `
+                <div id="sec-process" class="${filterStatus === 'all' || filterStatus === 'process' ? '' : 'hidden'}">
+                    <h3 class="text-warning font-bold text-sm uppercase tracking-wider mb-2 flex items-center">
+                        <i data-lucide="loader" class="w-4 h-4 mr-2"></i> En Proceso / Listos
+                    </h3>
+                    ${getList('process', 'En Proceso')}
+                    ${filterStatus === 'all' ? '<div class="h-px bg-white/10 mb-6"></div>' : ''}
+                </div>
+            `;
+
+            const completedSection = `
+                <div id="sec-completed" class="${filterStatus === 'all' || filterStatus === 'completed' ? '' : 'hidden'}">
+                    <h3 class="text-success font-bold text-sm uppercase tracking-wider mb-2 flex items-center">
+                        <i data-lucide="check-circle" class="w-4 h-4 mr-2"></i> Completados
+                    </h3>
+                    ${getList('completed', 'Completados')}
+                </div>
+            `;
+
+            // Assemble: Buttons + reordered sections (Pending -> Process -> Completed)
+            content.innerHTML = `
+                <div class="space-y-2">
+                    ${buttonsHtml}
+                    <div class="mt-4">
+                        ${pendingSection}
+                        ${processSection}
+                        ${completedSection}
+                    </div>
+                </div>
+            `;
+
+            // Reset Footer
+            footer.innerHTML = `
+                <button onclick="closeReport()" class="px-5 py-2 bg-secondary hover:bg-secondary/80 text-foreground text-sm font-medium rounded-lg transition-colors">
+                    Cerrar
+                </button>
+            `;
+
+            showReportModal();
+            lucide.createIcons();
+        }
+
+        function exportToExcel() {
+            // Helper to remove accents
+            const removeAccents = (str) => {
+                return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            };
+
+            // CSV Headers
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "Nombre,Fecha de Entrega,Hora de Entrega,Anticipo,Pago Restante,Total\n";
+
+            // CSV Rows
+            orders.forEach(o => {
+                const balance = o.totalAmount - o.paidAmount;
+                // Escape commas in strings if necessary and remove accents
+                const name = removeAccents(o.customerName.replace(/,/g, ''));
+                const date = o.deliveryDate || '-';
+                const time = removeAccents(o.deliveryTime.replace(/,/g, ''));
+
+                const row = `${name},${date},${time},${o.paidAmount},${balance},${o.totalAmount}`;
+                csvContent += row + "\n";
+            });
+
+            // Download Link (OUTSIDE the loop)
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "reporte_financiero_kairos.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function showReportModal() {
+            const backdrop = document.getElementById('report-backdrop');
+            const modal = document.getElementById('report-modal');
+
+            backdrop.classList.remove('hidden');
+            // Force reflow
+            void backdrop.offsetWidth;
+
+            backdrop.classList.remove('opacity-0');
+            modal.classList.remove('opacity-0', 'scale-95');
+            modal.classList.add('opacity-100', 'scale-100');
+        }
+
+        function closeReport() {
+            const backdrop = document.getElementById('report-backdrop');
+            const modal = document.getElementById('report-modal');
+
+            backdrop.classList.add('opacity-0');
+            modal.classList.add('opacity-0', 'scale-95');
+            modal.classList.remove('opacity-100', 'scale-100');
+
+            setTimeout(() => {
+                backdrop.classList.add('hidden');
+            }, 300);
+        }
+
+        document.getElementById('report-backdrop').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('report-backdrop')) {
+                closeReport();
+            }
+        });
+
+        // --- New Order Logic ---
+
+        // State
+        let currentOrderId = null;
+
+        // DOM Elements
+        const modalBackdrop = document.getElementById('new-order-backdrop');
+        const modal = document.getElementById('new-order-modal');
+
+        // Placeholder Prices
+        const PRICES = {
+            bouquet_vino: {
+                essential: 500,
+                dream: 850,
+                experience: 1500
+            },
+            paquete_mini: 350,
+            palomitas: 35,
+            brownie: 45,
+            pretzels: 40
+        };
+
+        function openNewOrderModal() {
+            modalBackdrop.classList.remove('hidden');
+            // Force reflow
+            void modalBackdrop.offsetWidth;
+            modalBackdrop.classList.remove('opacity-0');
+            modal.classList.remove('opacity-0', 'scale-95');
+            modal.classList.add('opacity-100', 'scale-100');
+
+            // Set default date to today
+            document.getElementById('new-date').valueAsDate = new Date();
+            updateProductOptions();
+        }
+
+        function closeNewOrderModal() {
+            modalBackdrop.classList.add('opacity-0');
+            modal.classList.add('opacity-0', 'scale-95');
+            modal.classList.remove('opacity-100', 'scale-100');
+            setTimeout(() => {
+                modalBackdrop.classList.add('hidden');
+                resetForm();
+            }, 300);
+        }
+
+        function resetForm() {
+            document.getElementById('new-name').value = '';
+            document.getElementById('new-date').valueAsDate = new Date();
+            document.getElementById('new-deposit').value = '';
+            document.getElementById('new-product').value = '';
+            updateProductOptions();
+        }
+
+        function confirmDiscardOrder() {
+            if (confirm('¿Estás seguro de que quieres borrar este pedido en curso?')) {
+                closeNewOrderModal();
+            }
+        }
+
+        function updateProductOptions() {
+            const product = document.getElementById('new-product').value;
+            const container = document.getElementById('dynamic-options');
+
+            let html = '';
+            if (!product) {
+                container.classList.add('hidden');
+                container.innerHTML = '';
+                updateTotal();
+                return;
+            }
+
+            container.classList.remove('hidden');
+
+            switch (product) {
+                case 'bouquet_vino':
+                    html = `
+                        <div class="space-y-3">
+                            <label class="block text-xs font-semibold text-muted uppercase tracking-wider">Variante de Vino</label>
+                            <div class="grid grid-cols-1 gap-2">
+                                <label class="flex items-center gap-3 p-3 bg-secondary/30 border border-white/10 rounded-lg cursor-pointer hover:bg-white/5 transition-all">
+                                    <input type="radio" name="vinoflor_type" value="essential" class="w-4 h-4 accent-primary" checked onchange="updateTotal()">
+                                    <div class="flex-1">
+                                        <div class="text-sm font-bold uppercase">Essential</div>
+                                        <div class="text-[10px] text-muted">Opción económica y elegante</div>
+                                    </div>
+                                    <span class="text-primary font-bold text-sm">$500</span>
+                                </label>
+                                <label class="flex items-center gap-3 p-3 bg-secondary/30 border border-white/10 rounded-lg cursor-pointer hover:bg-white/5 transition-all">
+                                    <input type="radio" name="vinoflor_type" value="dream" class="w-4 h-4 accent-primary" onchange="updateTotal()">
+                                    <div class="flex-1">
+                                        <div class="text-sm font-bold uppercase">Dream</div>
+                                        <div class="text-[10px] text-muted">Calidad media con mejor presentación</div>
+                                    </div>
+                                    <span class="text-primary font-bold text-sm">$850</span>
+                                </label>
+                                <label class="flex items-center gap-3 p-3 bg-secondary/30 border border-white/10 rounded-lg cursor-pointer hover:bg-white/5 transition-all">
+                                    <input type="radio" name="vinoflor_type" value="experience" class="w-4 h-4 accent-primary" onchange="updateTotal()">
+                                    <div class="flex-1">
+                                        <div class="text-sm font-bold uppercase">Experience</div>
+                                        <div class="text-[10px] text-muted">Alta calidad y experiencia premium</div>
+                                    </div>
+                                    <span class="text-primary font-bold text-sm">$1,500</span>
+                                </label>
+                            </div>
+                        </div>
+                    `;
+                    break;
+
+                case 'palomitas':
+                    html = `
+                         <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-muted uppercase tracking-wider mb-2">Sabor</label>
+                                <select id="palomitas-sabor" onchange="updateTotal()" class="w-full bg-secondary/50 border border-white/10 rounded-lg p-2.5 text-foreground focus:outline-none focus:border-primary text-sm">
+                                    <option value="mantequilla">Mantequilla</option>
+                                    <option value="caramelo">Caramelo</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-muted uppercase tracking-wider mb-2">Cantidad (Bolsas)</label>
+                                <input type="number" id="new-quantity" value="1" min="1" onchange="updateTotal()" 
+                                    class="w-full bg-secondary/50 border border-white/10 rounded-lg p-2.5 text-foreground focus:outline-none focus:border-primary transition-colors text-sm">
+                            </div>
+                        </div>
+                    `;
+                    break;
+
+                case 'pretzels':
+                    html = `
+                         <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-muted uppercase tracking-wider mb-2">Tipo de Chocolate</label>
+                                <select id="pretzels-tipo" onchange="updateTotal()" class="w-full bg-secondary/50 border border-white/10 rounded-lg p-2.5 text-foreground focus:outline-none focus:border-primary text-sm">
+                                    <option value="chocolate">Chocolate</option>
+                                    <option value="blanco">Blanco</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-muted uppercase tracking-wider mb-2">Cantidad (Bolsas)</label>
+                                <input type="number" id="new-quantity" value="1" min="1" onchange="updateTotal()" 
+                                    class="w-full bg-secondary/50 border border-white/10 rounded-lg p-2.5 text-foreground focus:outline-none focus:border-primary transition-colors text-sm">
+                            </div>
+                        </div>
+                    `;
+                    break;
+
+                case 'brownie':
+                    html = `
+                        <div>
+                             <label class="block text-xs font-semibold text-muted uppercase tracking-wider mb-2">Cantidad (Cajas)</label>
+                            <input type="number" id="new-quantity" value="1" min="1" onchange="updateTotal()" 
+                                class="w-full bg-secondary/50 border border-white/10 rounded-lg p-2.5 text-foreground focus:outline-none focus:border-primary transition-colors text-sm">
+                        </div>
+                    `;
+                    break;
+
+                case 'paquete_mini':
+                    html = `
+                        <div class="space-y-3">
+                            <label class="block text-xs font-semibold text-muted uppercase tracking-wider">Incluir (Selecciona 2 de 3):</label>
+                            <div class="grid grid-cols-1 gap-2">
+                                <label class="flex items-center gap-3 p-3 bg-secondary/30 border border-white/10 rounded-lg cursor-pointer hover:bg-white/5 transition-all">
+                                    <input type="checkbox" name="mini-option" value="palomitas" onchange="validateMiniOptions(this)" class="w-4 h-4 accent-primary">
+                                    <span class="text-sm font-medium">Palomitas</span>
+                                </label>
+                                <label class="flex items-center gap-3 p-3 bg-secondary/30 border border-white/10 rounded-lg cursor-pointer hover:bg-white/5 transition-all">
+                                    <input type="checkbox" name="mini-option" value="pretzels" onchange="validateMiniOptions(this)" class="w-4 h-4 accent-primary">
+                                    <span class="text-sm font-medium">Pretzels</span>
+                                </label>
+                                <label class="flex items-center gap-3 p-3 bg-secondary/30 border border-white/10 rounded-lg cursor-pointer hover:bg-white/5 transition-all">
+                                    <input type="checkbox" name="mini-option" value="brownie" onchange="validateMiniOptions(this)" class="w-4 h-4 accent-primary">
+                                    <span class="text-sm font-medium">Brownie</span>
+                                </label>
+                            </div>
+                             <div>
+                                <label class="block text-xs font-semibold text-muted uppercase tracking-wider mb-2 mt-2">Cantidad (Paquetes)</label>
+                                <input type="number" id="new-quantity" value="1" min="1" onchange="updateTotal()" 
+                                    class="w-full bg-secondary/50 border border-white/10 rounded-lg p-2.5 text-foreground focus:outline-none focus:border-primary transition-colors text-sm">
+                            </div>
+                        </div>
+                    `;
+                    break;
+            }
+
+            container.innerHTML = html;
+            updateTotal();
+        }
+
+        function validateMiniOptions(checkbox) {
+            const selected = document.querySelectorAll('input[name="mini-option"]:checked');
+            if (selected.length > 2) {
+                checkbox.checked = false;
+                alert("Solo puedes seleccionar máximo 2 opciones para el Paquete Mini.");
+            }
+            updateTotal();
+        }
+
+
+        function updateTotal() {
+            const product = document.getElementById('new-product').value;
+            const totalDisplay = document.getElementById('new-total');
+            let total = 0;
+
+            if (product === 'bouquet_vino') {
+                const type = document.querySelector('input[name="vinoflor_type"]:checked')?.value || 'essential';
+                total = PRICES.bouquet_vino[type];
+            } else {
+                const qtyInput = document.getElementById('new-quantity');
+                const qty = parseInt(qtyInput ? qtyInput.value : 1);
+                total = PRICES[product] * qty;
+            }
+
+            totalDisplay.textContent = `$${total.toLocaleString()}`;
+            return total;
+        }
+
+        function calculateTotal() {
+            return updateTotal();
+        }
+
+
+        function saveNewOrder() {
+            const name = document.getElementById('new-name').value;
+            const dateInput = document.getElementById('new-date').value;
+            const deposit = parseFloat(document.getElementById('new-deposit').value || 0);
+            const product = document.getElementById('new-product').value;
+            const total = calculateTotal();
+
+            if (!name || !dateInput || !product) {
+                alert('Por favor completa todos los campos obligatorios.');
+                return;
+            }
+
+            // Format date time for display
+            const dateObj = new Date(dateInput);
+            const timeStr = dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+            const dateStr = dateObj.toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+            // Determine Description
+            let desc = '';
+            if (product === 'bouquet_vino') {
+                const type = document.querySelector('input[name="vinoflor_type"]:checked')?.value;
+                desc = `Bouquet & Vino (${type.charAt(0).toUpperCase() + type.slice(1)})`;
+            } else if (product === 'paquete_mini') {
+                const qty = document.getElementById('new-quantity').value;
+                const options = Array.from(document.querySelectorAll('input[name="mini-option"]:checked')).map(cb => cb.value).join(', ');
+                desc = `Paquete Mini (${qty}) - Incluye: ${options || 'Ninguno'}`;
+            } else {
+                const qty = document.getElementById('new-quantity').value;
+                const unit = product === 'paquete_mini' ? 'Paquetes' : (product === 'brownie' ? 'Cajas' : 'Bolsas');
+                const pName = product.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+
+                let detail = '';
+                if (product === 'palomitas') detail = ` (${document.getElementById('palomitas-sabor').value})`;
+                if (product === 'pretzels') detail = ` (${document.getElementById('pretzels-tipo').value})`;
+
+                desc = `${pName}${detail} - ${qty} ${unit}`;
+            }
+
+            const newOrder = {
+                id: Date.now().toString(),
+                customerName: name,
+                deliveryDate: dateStr,
+                deliveryTime: timeStr,
+                description: desc,
+                totalAmount: total,
+                paidAmount: deposit,
+                status: 'pedidos',
+                isUrgent: false
+            };
+
+            orders.push(newOrder);
+            renderBoard();
+            updateStats();
+            closeNewOrderModal();
+            lucide.createIcons();
+        }
+
+
+        // --- Receipt Logic ---
+        function openReceiptModal(id = null) {
+            const targetId = id || currentOrderId;
+            if (!targetId) return;
+
+            const order = orders.find(o => o.id === targetId);
+            if (!order) return;
+
+            const backdrop = document.getElementById('receipt-backdrop');
+            const modal = document.getElementById('receipt-modal');
+
+            // Populate Data
+            document.getElementById('receipt-date').textContent = new Date().toLocaleDateString('es-MX', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+            document.getElementById('receipt-amount').textContent = `$${order.paidAmount.toLocaleString()}`;
+            document.getElementById('receipt-concept').textContent = order.description;
+            document.getElementById('receipt-ref').textContent = `ORD-${order.id.slice(-6)}-KAI`;
+
+            backdrop.classList.remove('hidden');
+            void backdrop.offsetWidth;
+            backdrop.classList.remove('opacity-0');
+            modal.classList.remove('opacity-0', 'scale-95');
+            modal.classList.add('opacity-100', 'scale-100');
+
+            lucide.createIcons();
+        }
+
+        function closeReceiptModal() {
+            const backdrop = document.getElementById('receipt-backdrop');
+            const modal = document.getElementById('receipt-modal');
+
+            backdrop.classList.add('opacity-0');
+            modal.classList.add('opacity-0', 'scale-95');
+            modal.classList.remove('opacity-100', 'scale-100');
+
+            setTimeout(() => {
+                backdrop.classList.add('hidden');
+            }, 300);
+        }
+
+        // --- Payment Logic ---
+        function openPaymentModal(orderId) {
+            const order = orders.find(o => o.id === orderId);
+            if (!order) return;
+
+            currentOrderId = orderId;
+            const pending = order.totalAmount - order.paidAmount;
+
+            const amountInput = document.getElementById('payment-amount');
+            amountInput.value = pending;
+            amountInput.min = pending;
+            // Prevent decreasing the value via manual typing
+            amountInput.oninput = function () {
+                if (parseFloat(this.value) < parseFloat(this.min)) {
+                    this.value = this.min;
+                }
+                calculateChange();
+            };
+
+            document.getElementById('cash-received').value = '';
+
+            // Reset Camera
+            const cameraInput = document.getElementById('capture-receipt');
+            if (cameraInput) cameraInput.value = '';
+            const photoStatus = document.getElementById('photo-status');
+            if (photoStatus) photoStatus.textContent = "Adjuntar comprobante (Opcional)";
+
+            // Reset to Transfer by default
+            const radios = document.getElementsByName('payment_method');
+            if (radios.length > 0) radios[0].checked = true;
+            togglePaymentMethod();
+
+            const backdrop = document.getElementById('payment-backdrop');
+            const modal = document.getElementById('payment-modal');
+
+            backdrop.classList.remove('hidden');
+            void backdrop.offsetWidth;
+            backdrop.classList.remove('opacity-0');
+            modal.classList.remove('opacity-0', 'scale-95');
+            modal.classList.add('opacity-100', 'scale-100');
+
+            lucide.createIcons();
+        }
+
+        function togglePaymentMethod() {
+            const method = document.querySelector('input[name="payment_method"]:checked').value;
+            const transferInfo = document.getElementById('pay-info-transfer');
+            const cashInfo = document.getElementById('pay-info-cash');
+            const btnText = document.getElementById('btn-pay-text');
+
+            if (method === 'transfer') {
+                transferInfo.classList.remove('hidden');
+                cashInfo.classList.add('hidden');
+                btnText.textContent = "Confirmar Transferencia";
+            } else {
+                transferInfo.classList.add('hidden');
+                cashInfo.classList.remove('hidden');
+                btnText.textContent = "Registrar Efectivo";
+                calculateChange();
+            }
+        }
+
+        function calculateChange() {
+            const amountToPay = parseFloat(document.getElementById('payment-amount').value) || 0;
+            const cashReceived = parseFloat(document.getElementById('cash-received').value) || 0;
+            const diff = cashReceived - amountToPay;
+
+            const changeEl = document.getElementById('cash-change');
+            const labelEl = document.getElementById('change-label');
+
+            if (diff >= 0) {
+                labelEl.textContent = "CAMBIO";
+                labelEl.className = "text-xs text-success block uppercase tracking-wider mb-1";
+                changeEl.textContent = `$${diff.toLocaleString()}`;
+                changeEl.className = "text-2xl font-bold text-success";
+            } else {
+                labelEl.textContent = "FALTA";
+                labelEl.className = "text-xs text-danger block uppercase tracking-wider mb-1";
+                changeEl.textContent = `$${Math.abs(diff).toLocaleString()}`;
+                changeEl.className = "text-2xl font-bold text-danger";
+            }
+        }
+
+        function closePaymentModal() {
+            const backdrop = document.getElementById('payment-backdrop');
+            const modal = document.getElementById('payment-modal');
+
+            backdrop.classList.add('opacity-0');
+            modal.classList.add('opacity-0', 'scale-95');
+            modal.classList.remove('opacity-100', 'scale-100');
+
+            setTimeout(() => {
+                backdrop.classList.add('hidden');
+            }, 300);
+        }
+
+        function submitPayment() {
+            if (!currentOrderId) return;
+
+            const amount = parseFloat(document.getElementById('payment-amount').value);
+            if (isNaN(amount) || amount <= 0) {
+                alert("Ingrese un monto válido");
+                return;
+            }
+
+            const method = document.querySelector('input[name="payment_method"]:checked').value;
+
+            if (method === 'cash') {
+                const received = parseFloat(document.getElementById('cash-received').value) || 0;
+                if (received < amount) {
+                    if (!confirm(`El monto recibido es menor al pago. ¿Registrar solo $${received}?`)) {
+                        return;
+                    }
+                }
+            }
+
+            const order = orders.find(o => o.id === currentOrderId);
+            const pending = order.totalAmount - order.paidAmount;
+
+            if (amount > pending) {
+                alert(`El monto excede la deuda pendiente ($${pending})`);
+                return;
+            }
+
+            order.paidAmount += amount;
+
+            // Auto-move to completed if fully paid
+            if (order.paidAmount >= order.totalAmount) {
+                order.status = 'completed';
+            }
+
+            renderBoard();
+            updateStats();
+
+            if (!document.getElementById('report-backdrop').classList.contains('hidden')) {
+                openCashReport();
+            }
+
+            const drawerIdEl = document.getElementById('drawer-id');
+            if (drawerIdEl && drawerIdEl.textContent.includes(currentOrderId)) {
+                openDrawer(currentOrderId);
+            }
+
+            closePaymentModal();
+        }
+
+        function registerPayment(orderId) {
+            openPaymentModal(orderId);
+        }
+
+        function handlePhotoSelection() {
+            const input = document.getElementById('capture-receipt');
+            const status = document.getElementById('photo-status');
+            if (input.files && input.files[0]) {
+                status.textContent = "✅ Comprobante capturado";
+                status.classList.add('text-success');
+            }
+        }
+
+    </script>
+</body>
+
+</html>
