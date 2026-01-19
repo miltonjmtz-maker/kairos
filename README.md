@@ -34,7 +34,7 @@ El diseño utiliza una paleta de colores elegante basada en **Carbón Profundo (
    ```bash
    git clone https://github.com/miltonjmtz-maker/kairos.git
    ```
-2. Abre `dashboard.html` en cualquier navegador moderno.
+2. Abre `index.html` en cualquier navegador moderno.
 3. ¡Listo! No requiere de un servidor backend complejo ya que la lógica se ejecuta en el lado del cliente (Local Storage).
 
 ---
